@@ -1,0 +1,22 @@
+CombineAshx - A single, no configuration ASP.NET file for combining JavaScript or css/less files
+  
+  
+ How to use:
+  
+ 1) Copy to a folder with js/css files
+ 2) Reference it via URL, with specifying compression type add comma separated names of files
+ 3) If you want to use it for combining css resulted from .LESS files, get dotLess.Core.dll from http://www.dotlesscss.org/ and put it into "/Bin" folder of your website 
+  
+  Examples:
+  
+  Javascript files:      http://my_website/.../Scripts/Combine.ashx/js/TrackOutbound,TrackRestriction
+  Css/Less files:        http://my_website/.../Styles/Combine.ashx/css/TableStyles,Typography
+  
+ 
+ Known issues:
+ 
+ - "@import" directives in .less files don't work 
+ 
+ 
+ Version 1.0.  2012/02/02
+ Originally written by Dmitry Dzygin, use on your own risk :) 
