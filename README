@@ -9,8 +9,11 @@ CombineAshx - A single, no configuration ASP.NET file for combining JavaScript o
   
   Examples:
   
-  Javascript files:      http://my_website/.../Scripts/Combine.ashx/js/TrackOutbound,TrackRestriction
-  Css/Less files:        http://my_website/.../Styles/Combine.ashx/css/TableStyles,Typography
+  Javascript files:      
+  http://my_website/Scripts/Combine.ashx/js/TrackOutbound,TrackRestriction
+  
+  Css/Less files:        
+  http://my_website/Styles/Combine.ashx/css/TableStyles,Typography
   
  
  Known issues:
