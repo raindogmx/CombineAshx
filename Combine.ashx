@@ -103,7 +103,8 @@ public class Combine : IHttpHandler {
         }
         else
         {
-            response.Write("Not allowed mode");
+            SetErrorResponseCode(response);
+            response.Write(string.Format("Not allowed mode '{0}'. Allowed values 'js' and 'css'", context.Server.HtmlEncode(modeStr)));
             return;
         }
 
@@ -119,6 +120,13 @@ public class Combine : IHttpHandler {
         // Gathering information about files
         foreach (string fileName in filesToCombine)
         {
+            if (fileName.Contains("..") || fileName.IndexOfAny(Path.GetInvalidPathChars()) > 0)
+            {
+                SetErrorResponseCode(response);
+                context.Response.Write(string.Format("File name '{0}' contains forbidden characters ", context.Server.HtmlEncode(fileName)));
+                return;
+            }
+            
             bool fileFound = false;
             
             string filePath = null;
@@ -136,7 +144,15 @@ public class Combine : IHttpHandler {
 
             if (!fileFound)
             {
-                response.StatusCode = 500;
+                SetErrorResponseCode(response);
+                
+                response.Write("Cannot find " + ((extensions.Length > 1) ? "one of the following files" : "the following file") + ": ");
+
+                for (int i = 0; i < extensions.Length; i++ )
+                {
+                    if(i > 0) response.Write(", ");
+                    response.Write(context.Server.HtmlEncode(fileName + extensions[i]));
+                }
                 return;
             }
 
@@ -175,9 +191,9 @@ public class Combine : IHttpHandler {
                 catch (Exception pe)
                 {
                     context.Response.StatusCode = 500; // error
-                    response.Write(string.Format("Failed to process LESS file '{0}'", Path.GetFileName(file)));
+                    response.Write(string.Format("Failed to process LESS file '{0}'", context.Server.HtmlEncode(Path.GetFileName(file))));
                    
-                    context.Response.Write(pe.Message);
+                    context.Response.Write(context.Server.HtmlEncode(pe.Message));
                     return;
                 }
             }
@@ -187,6 +203,12 @@ public class Combine : IHttpHandler {
         }
     }
 
+    private static void SetErrorResponseCode(HttpResponse response)
+    {
+        response.TrySkipIisCustomErrors = true; // Status code is 500, so IIS may replace it with an error page
+        response.StatusCode = 500; 
+    }
+    
     private static string[] GetModeAndFileNamesFromRequest(HttpRequest request, out string modeStr)
     {
         string pathInfo = request.PathInfo;
