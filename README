@@ -1,4 +1,4 @@
- CombineAshx -  A single, no configuration ASP.NET file for combining & minifying JavaScript and CSS/LESS files
+ CombineAshx -  A single file ASP.NET tool for combining and minifying JavaScript and CSS/LESS files
  
  
  How to use:
@@ -20,4 +20,4 @@
  
  
   Version 1.0.3  2012/06/13
-  Originally written by Dmitry Dzygin, use at your own risk :) */
+  Originally written by Dmitry Dzygin
