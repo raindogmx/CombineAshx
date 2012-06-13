@@ -1,6 +1,6 @@
 ﻿<%@ WebHandler Language="C#" Class="Combine" %>
 
-/* CombineAshx -  A single, no configuration ASP.NET file for combining JavaScript or css/less files
+/* CombineAshx -  A single, no configuration ASP.NET file for combining & minifying JavaScript and CSS/LESS files
  * 
  * 
  * How to use:
@@ -12,12 +12,14 @@
  * Examples:
  * 
  * Javascript files:      http://my_website/.../Scripts/Combine.ashx/js/TrackOutbound,TrackRestriction
- * Css/Less files:        http://my_website/.../Styles/Combine.ashx/css/TableStyles,Typography
+ * Css/Less files:  
+ *   combining                  http://my_website/.../Styles/Combine.ashx/css/TableStyles,Typography
+ *   combining & minification   http://my_website/.../Styles/Combine.ashx/css,minify/TableStyles,Typography
  * 
  * 
  * 
- *  Version 1.0.2  2012/06/13
- *  Originally written by Dmitry Dzygin, use on your own risk :) */
+ *  Version 1.0.3  2012/06/13
+ *  Originally written by Dmitry Dzygin, use at your own risk :) */
 
 
 using System;
@@ -25,6 +27,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web;
 
@@ -39,7 +42,7 @@ public class Combine : IHttpHandler {
     static readonly TimeSpan ExpirationPeriod = new TimeSpan(7, 0, 0, 1); // 7 days and 1 second
     
     static volatile object _lessEngine;
-    private static MethodInfo LessEngine_TransformToCssMethodInfo = null;
+    private static MethodInfo _lessEngine_transformToCssMethodInfo;
     static readonly object _lessEngineInitSyncRoot = new object();
 
     static Combine()
@@ -61,7 +64,7 @@ public class Combine : IHttpHandler {
                 throw new InvalidOperationException("Copy dotless.Core.dll from http://www.dotlesscss.org/ for processing .less files");
             }
 
-            LessEngine_TransformToCssMethodInfo = type.GetMethod("TransformToCss", new[] {typeof (string), typeof (string)});
+            _lessEngine_transformToCssMethodInfo = type.GetMethod("TransformToCss", new[] { typeof(string), typeof(string) });
             
             // Reflection: var lessEngine = new dotless.Core.LessEngine();
             object lessEngine = type.GetConstructor(new Type[0]).Invoke(new object[0]);
@@ -83,7 +86,7 @@ public class Combine : IHttpHandler {
         }
 
         // Reflection: return _lessEngine.TransformToCss(fileContentWithoutEncodingSignature, file);
-        return LessEngine_TransformToCssMethodInfo.Invoke(_lessEngine, new object[] { fileContentWithoutEncodingSignature, file }) as string;
+        return _lessEngine_transformToCssMethodInfo.Invoke(_lessEngine, new object[] { fileContentWithoutEncodingSignature, file }) as string;
     }
 
     
@@ -92,8 +95,9 @@ public class Combine : IHttpHandler {
         var response = context.Response;
 
         string modeStr;
+        bool minify;
         
-        string[] filesToCombine = GetModeAndFileNamesFromRequest(request, out modeStr);
+        string[] filesToCombine = GetModeAndFileNamesFromRequest(request, out modeStr, out minify);
         if(filesToCombine == null)
         {
             response.StatusCode = 500;
@@ -208,10 +212,49 @@ public class Combine : IHttpHandler {
                     return;
                 }
             }
-            
-            context.Response.Write("\r\n /* File: _fileName_ */\r\n".Replace("_fileName_", Path.GetFileName(file)));
-            context.Response.Write(fileContentWithoutEncodingSignature);
+
+            if (!minify)
+            {
+                context.Response.Write("\r\n /* File: _fileName_ */\r\n".Replace("_fileName_", Path.GetFileName(file)));
+            }
+
+            string outputCode = fileContentWithoutEncodingSignature;
+
+            if(minify)
+            {
+                outputCode = (mode == CombiningMode.Styles) ? MinifyCSS(outputCode) : MinifyJS(outputCode);
+            }
+
+            context.Response.Write(outputCode);
         }
+    }
+    
+    private static string MinifyCSS(string css)
+    {
+        // remove new lines
+        css = Regex.Replace(css, @"(?:\r\n|[\r\n])", "");
+        // remove css comments
+        css = Regex.Replace(css, @"/\*.+?\*/", "");
+        // remove double spaces
+        css = Regex.Replace(css, @"\s+", " ");
+
+        StringBuilder sb = new StringBuilder(css);
+        sb.Replace("\t", "")
+            .Replace("; ", ";")
+            .Replace(": ", ":")
+            .Replace("{ ", "{")
+            .Replace("} ", "}")
+            .Replace(", ", ",")
+            .Replace(" {", "{")
+            .Replace(" }", "}");
+        return sb.ToString();
+    }
+    
+    private static string MinifyJS(string js)
+    {
+        // TODO: to be implemented
+
+        return js;
     }
 
     private static void SetErrorResponseCode(HttpResponse response)
@@ -220,8 +263,10 @@ public class Combine : IHttpHandler {
         response.StatusCode = 500; 
     }
     
-    private static string[] GetModeAndFileNamesFromRequest(HttpRequest request, out string modeStr)
+    private static string[] GetModeAndFileNamesFromRequest(HttpRequest request, out string modeStr, out bool minify)
     {
+        minify = false;
+        
         string pathInfo = request.PathInfo;
         if (string.IsNullOrWhiteSpace(pathInfo))
         {
@@ -231,7 +276,10 @@ public class Combine : IHttpHandler {
 
         string[] pathInfoParts = pathInfo.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
-        modeStr = pathInfoParts[0].ToLowerInvariant();
+        string[] settings = pathInfoParts[0].ToLowerInvariant().Split(new [] {','}, StringSplitOptions.RemoveEmptyEntries);
+        modeStr = settings[0];
+
+        minify = Array.IndexOf(settings, "minify") > -1;
         
         if (pathInfoParts.Length < 2) return null;
 
