@@ -16,10 +16,6 @@ CombineAshx - A single, no configuration ASP.NET file for combining JavaScript o
   http://my_website/Styles/Combine.ashx/css/TableStyles,Typography
   
  
- Known issues:
- 
- - "@import" directives in .less files don't work 
- 
- 
- Version 1.0.  2012/02/02
+ Version 1.0.2  2012/06/12
+
  Originally written by Dmitry Dzygin, use on your own risk :) 

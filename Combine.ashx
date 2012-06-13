@@ -15,12 +15,8 @@
  * Css/Less files:        http://my_website/.../Styles/Combine.ashx/css/TableStyles,Typography
  * 
  * 
- * Known issues:
  * 
- * - "@import" directives in .less files don't work 
- * 
- * 
- *  Version 1.0.  2012/02/02
+ *  Version 1.0.2  2012/06/13
  *  Originally written by Dmitry Dzygin, use on your own risk :) */
 
 
@@ -67,12 +63,27 @@ public class Combine : IHttpHandler {
 
             LessEngine_TransformToCssMethodInfo = type.GetMethod("TransformToCss", new[] {typeof (string), typeof (string)});
             
+            // Reflection: var lessEngine = new dotless.Core.LessEngine();
+            object lessEngine = type.GetConstructor(new Type[0]).Invoke(new object[0]);
+
+            // Reflection: (lessEngine.Parser.Importer.FileReader as FileReader).PathResolver = new dotless.Core.Input.AspServerPathResolver();
+
+            object aspServerPathResolver = Type.GetType("dotless.Core.Input.AspServerPathResolver, dotless.Core")
+                                           .GetConstructor(new Type[0]).Invoke(new object[0]);
+            
+            object parser = lessEngine.GetType().GetProperty("Parser").GetValue(lessEngine, new object[0]);
+            object importer = parser.GetType().GetProperty("Importer").GetValue(parser, new object[0]);
+            object fileReader = importer.GetType().GetProperty("FileReader").GetValue(importer, new object[0]);
+
+            fileReader.GetType().GetProperty("PathResolver").SetValue(fileReader, aspServerPathResolver, new object[0]);
+            
             Thread.MemoryBarrier();
             
-            _lessEngine = type.GetConstructor(new Type[0]).Invoke(new object[0]);
+            _lessEngine = lessEngine;
         }
 
-        return LessEngine_TransformToCssMethodInfo.Invoke(_lessEngine, new object[] { fileContentWithoutEncodingSignature, Path.GetDirectoryName(file) }) as string;
+        // Reflection: return _lessEngine.TransformToCss(fileContentWithoutEncodingSignature, file);
+        return LessEngine_TransformToCssMethodInfo.Invoke(_lessEngine, new object[] { fileContentWithoutEncodingSignature, file }) as string;
     }
 
     
