@@ -7,14 +7,17 @@
  * 
  * 1) Copy to a folder with js/css files
  * 2) Reference it via URL, with specifying compression type add comma separated names of files
- * 3) If you want to use it for combining css resulted from .LESS files, get dotLess.Core.dll from http://www.dotlesscss.org/ and put it into "/Bin" folder of your website 
+ * 3) If you want to use it for combining css resulted from .LESS files, 
+ *    download dotLess.Core.dll from http://www.dotlesscss.org/ and put it into the "/Bin" folder of your website 
  * 
  * Examples:
  * 
- * Javascript files:      http://my_website/.../Scripts/Combine.ashx/js/TrackOutbound,TrackRestriction
- * Css/Less files:  
- *   combining                  http://my_website/.../Styles/Combine.ashx/css/TableStyles,Typography
- *   combining & minification   http://my_website/.../Styles/Combine.ashx/css,minify/TableStyles,Typography
+ * Javascript files:      
+ *   combining                http://../Scripts/Combine.ashx/js/JsFileNameA,JsFileNameB
+
+ *  Css/Less files:  
+ *   combining                http://../Styles/Combine.ashx/css/FileNameA,FileNameB
+ *   combining+minification   http://../Styles/Combine.ashx/css,minify/FileNameA,FileNameB
  * 
  * 
  * 
